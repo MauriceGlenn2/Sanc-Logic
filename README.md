@@ -1,5 +1,3 @@
-# Sanc-Logic (WIP)
-
 Sanc Logic
 🚩 Initial Vector
 Identify the file that started the infection chain.
@@ -64,8 +62,126 @@ DeviceName: as-pc2
 SECTION 3: CREDENTIAL ACCESS [Hard] 
 🚩Registry Targets
 The attacker targeted local credential stores.
-Format: Comma separated
-What two registry hives were targeted?*
+DeviceProcessEvents
+| where TimeGenerated between (datetime(2026-01-01T00:00:00) .. datetime(2026-02-01T00:00:00))
+| where DeviceName == "as-pc1"
+| where FileName =~ "reg.exe"
+| project TimeGenerated, DeviceName, ProcessCommandLine, InitiatingProcessFileName
+What two registry hives were targeted?*Sam, SYSTEM
+
+
+🚩 Local Staging
+Extracted data was saved locally before exfiltration.
+DeviceProcessEvents
+| where TimeGenerated between (datetime(2026-01-01T00:00:00) .. datetime(2026-02-01T00:00:00))
+| where DeviceName == "as-pc1"
+| where FileName =~ "reg.exe"
+| project TimeGenerated, DeviceName, ProcessCommandLine, InitiatingProcessFileName
+
+
+Where were the credential files saved?
+*C:\Users\Public\
+🚩 Execution Identity
+Credential extraction was performed under a specific user context.
+DeviceProcessEvents
+| where TimeGenerated between (datetime(2026-01-01T00:00:00) .. datetime(2026-02-01T00:00:00))
+| where DeviceName == "as-pc1"
+| where FileName =~ "reg.exe"
+| project TimeGenerated, AccountName, DeviceName, ProcessCommandLine, InitiatingProcessFileName
+What user performed this action?*sophie.turner
+
+
+SECTION 4: DISCOVERY [Moderate] 
+🚩 User Context
+The attacker confirmed their identity after initial access.
+DeviceProcessEvents
+| where TimeGenerated between (datetime(2026-01-01T00:00:00) .. datetime(2026-02-01T00:00:00))
+| where DeviceName == "as-pc1"
+| where InitiatingProcessFileName == "daniel_richardson_cv.pdf.exe"
+| project TimeGenerated, AccountName, DeviceName, ProcessCommandLine, InitiatingProcessFileName
+
+
+What command was used?
+*whoami.exe
+🚩 Network Enumeration
+The attacker enumerated network resources.
+DeviceProcessEvents
+| where TimeGenerated between (datetime(2026-01-01T00:00:00) .. datetime(2026-02-01T00:00:00))
+| where DeviceName == "as-pc1"
+| where InitiatingProcessFileName == "daniel_richardson_cv.pdf.exe"
+| project TimeGenerated, AccountName, DeviceName, ProcessCommandLine, InitiatingProcessFileName
+
+
+What command was used to view available shares?
+*net.exe view
+🚩 Local Admins
+The attacker enumerated privileged local group membership.
+DeviceProcessEvents
+| where TimeGenerated between (datetime(2026-01-01T00:00:00) .. datetime(2026-02-01T00:00:00))
+| where DeviceName == "as-pc1"
+| where InitiatingProcessFileName == "daniel_richardson_cv.pdf.exe"
+| project TimeGenerated, AccountName, DeviceName, ProcessCommandLine, InitiatingProcessFileName
+
+
+What group was queried?*administrators
+SECTION 5: PERSISTENCE - REMOTE TOOL [Hard] 
+🚩 Remote Tool
+A legitimate remote administration tool was deployed for ongoing access.
+DeviceProcessEvents
+| where TimeGenerated between (datetime(2026-01-01T00:00:00) .. datetime(2026-02-01T00:00:00))
+| where DeviceName == "as-pc1"
+| where InitiatingProcessFileName == "daniel_richardson_cv.pdf.exe"
+| project TimeGenerated, AccountName, DeviceName, ProcessCommandLine, InitiatingProcessFileName
+What software was installed?
+*anydesk
+🚩 Remote Tool Hash
+Identify the SHA256 hash of the remote access tool.
+DeviceFileEvents
+| where TimeGenerated between (datetime(2026-01-01T00:00:00) .. datetime(2026-02-01T00:00:00))
+| where DeviceName == "as-pc1"
+| where FileName contains "anydesk"
+
+
+What is the file hash?
+*f42b635d93720d1624c74121b83794d706d4d064bee027650698025703d20532
+🚩 Download Method
+The tool was downloaded using a native Windows binary.
+DeviceProcessEvents
+| where TimeGenerated between (datetime(2026-01-01T00:00:00) .. datetime(2026-02-01T00:00:00))
+| where DeviceName == "as-pc1"
+| where InitiatingProcessFileName == "daniel_richardson_cv.pdf.exe"
+| project TimeGenerated, AccountName, FileName , DeviceName, ProcessCommandLine, InitiatingProcessFileName, SHA256
+What binary/executable was used?
+*certutil
+🚩 Configuration Access
+After installation, a configuration file was accessed.
+DeviceProcessEvents
+| where TimeGenerated between (datetime(2026-01-01T00:00:00) .. datetime(2026-02-01T00:00:00))
+| where DeviceName == "as-pc1"
+| where InitiatingProcessFileName == "daniel_richardson_cv.pdf.exe"
+| project TimeGenerated, AccountName, FileName , DeviceName, ProcessCommandLine, InitiatingProcessFileName, SHA256
+What is the full path of this file?
+*C:\Users\Sophie.Turner\AppData\Roaming\AnyDesk\system.conf
+🚩 Access Credentials
+Unattended access was configured for the remote tool.
+DeviceProcessEvents
+| where TimeGenerated between (datetime(2026-01-01T00:00:00) .. datetime(2026-02-01T00:00:00))
+| where DeviceName == "as-pc1"
+| where InitiatingProcessFileName == "daniel_richardson_cv.pdf.exe"
+| project TimeGenerated, AccountName, FileName , DeviceName, ProcessCommandLine, InitiatingProcessFileName, SHA256
+What password was set?
+*intrud3r!
+🚩 Deployment Footprint
+The remote tool was installed across the environment.
+DeviceFileEvents
+| where TimeGenerated between (datetime(2026-01-01T00:00:00) .. datetime(2026-02-01T00:00:00))
+| where FolderPath contains "AnyDesk"
+| project TimeGenerated, FileName , DeviceName, InitiatingProcessFileName, SHA256
+
+
+List all hostnames where it was deployed.
+*as-pc1, as-pc2, as-srv
+SECTION 6: LATERAL MOVEMENT [Advanced] 
 
 
 
@@ -80,6 +196,25 @@ What two registry hives were targeted?*
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+Notes: 
+//disabling AV tools through command line:
+DeviceProcessEvents
+| where TimeGenerated between (datetime(2026-01-01T00:00:00) .. datetime(2026-02-01T00:00:00))
+| where DeviceName == "as-pc2"
+| where FileName =~ "reg.exe"
+| project TimeGenerated, DeviceName, ProcessCommandLine, InitiatingProcessFileName
 
 
 
